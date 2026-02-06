@@ -20,11 +20,21 @@ This project avoids "black box" cloud services by implementing a custom, version
 | **Processing** | Apache Spark | v3.5 | In-memory parallel correlation and joins |
 
 ##  Data Sources
-TraceGuard utilizes verified, high-volume public datasets:
-* **Loghub (HDFS Logs):** 30GB+ of raw system logs for volume testing.
-* **CSE-CIC-IDS2018 (AWS):** 450GB+ of labeled network traffic for large-scale analysis.
-* **AlienVault OTX:** Real-time threat intelligence feeds via REST API.
+TraceGuard utilizes the following publicly accessible datasets to simulate a high-volume enterprise environment:
 
+1. **System Logs (Volume):** [Loghub - HDFS Dataset](https://github.com/logpai/loghub)
+   - **Type:** Unstructured raw logs.
+   - **Scale:** 30GB+ of distributed system telemetry.
+   - **Purpose:** Testing the ingestion and normalization pipeline.
+
+2. **Network Traffic (Ground Truth):** [CSE-CIC-IDS2018](https://registry.opendata.aws/cse-cic-ids2018/)
+   - **Type:** Structured CSV/PCAP network flows.
+   - **Scale:** 450GB+ hosted on AWS Open Data.
+   - **Purpose:** Providing labeled attack data for correlation testing.
+
+3. **Threat Intelligence (Enrichment):** [AlienVault OTX API](https://otx.alienvault.com/)
+   - **Type:** Semi-structured JSON (REST API).
+   - **Purpose:** Populating the HBase blacklist for real-time IP reputation lookups.
 
 
 ##  Repository Structure
