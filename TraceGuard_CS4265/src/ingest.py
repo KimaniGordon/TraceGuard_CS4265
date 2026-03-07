@@ -2,46 +2,57 @@ import os
 import requests
 import pandas as pd
 from dotenv import load_dotenv
-from datetime import datetime
 
-# 1. Pipeline Framework: Load secure credentials
-load_dotenv()
+# 1. Load your .env
+load_dotenv(os.path.join(os.path.dirname(__file__), '..', '.env'))
 API_KEY = os.getenv("OTX_API_KEY")
 
-def run_ingestion():
-    print(f"[{datetime.now()}] 🚀 TraceGuard: Starting Ingestion...")
+def ingest_siphon():
+    if not API_KEY:
+        print("❌ ERROR: OTX_API_KEY is missing from your .env file.")
+        return
+
+    print("📡 TraceGuard: Siphoning subscribed pulses to CSV...")
     
-    # AlienVault OTX Endpoint for 'General' indicator pulses
-    # This pulls recent threat reports shared by the community
+    # This is the Community-safe endpoint (The 'OTX Siphon' method)
     url = "https://otx.alienvault.com/api/v1/pulses/subscribed"
     headers = {"X-OTX-API-KEY": API_KEY}
-
+    
     try:
-        # 2. Acquisition: Real-time API Call
-        print(f"[{datetime.now()}] 📡 Connecting to AlienVault OTX...")
-        response = requests.get(url, headers=headers, params={"limit": 20})
+        response = requests.get(url, headers=headers)
         response.raise_for_status()
         
-        # 3. Processing: Convert JSON to a Data Structure
-        data = response.json()
-        pulses = data.get('results', [])
+        pulses = response.json().get('results', [])
         
-        # 4. Persistence: Save to local storage (CSV/Parquet)
-        if pulses:
-            df = pd.DataFrame(pulses)
-            # Ensure the directory exists
-            os.makedirs("data/raw", exist_ok=True)
-            
-            output_path = "data/raw/threat_feed_sample.csv"
-            df.to_csv(output_path, index=False)
-            
-            print(f"[{datetime.now()}] ✅ Success! Ingested {len(df)} threat pulses.")
-            print(f"[{datetime.now()}] 💾 Data persisted to: {output_path}")
-        else:
-            print(f"[{datetime.now()}] ⚠️ No new data found in the subscription feed.")
+        if not pulses:
+            print("⚠️ No data found. Did you 'Follow' any pulses (SQLi/Malware) on OTX?")
+            return
+
+        # Flattening indicators for your Spark-ready CSV
+        data_list = []
+        for pulse in pulses:
+            for ind in pulse.get('indicators', []):
+                data_list.append({
+                    "indicator": ind.get('indicator'),
+                    "type": ind.get('type'),
+                    "pulse_title": pulse.get('name'),
+                    "description": pulse.get('description', 'N/A')
+                })
+        
+        df = pd.DataFrame(data_list)
+        
+        # 2. Ensure the 'data/raw' folder exists
+        output_dir = os.path.join(os.path.dirname(__file__), '..', 'data', 'raw')
+        os.makedirs(output_dir, exist_ok=True)
+        
+        # 3. Save the file
+        output_file = os.path.join(output_dir, 'threat_sample.csv')
+        df.to_csv(output_file, index=False)
+        
+        print(f"✅ SUCCESS! Ingested {len(df)} indicators to {output_file}")
 
     except Exception as e:
-        print(f"[{datetime.now()}] ❌ Critical Error: {e}")
+        print(f"❌ Ingestion Failed: {e}")
 
 if __name__ == "__main__":
-    run_ingestion()
+    ingest_siphon()
