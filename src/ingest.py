@@ -9,7 +9,7 @@ API_KEY = os.getenv("OTX_API_KEY")
 
 def run():
     if not API_KEY:
-        # We use a raw string (r"") here to prevent the backslash error
+        #  use a raw string (r"") here to prevent the backslash error
         print(r"Error: OTX_API_KEY still not found. Check .env in C:\Users\gordo\TraceGuard")
         return
     
