@@ -4,7 +4,7 @@
 
 ---
 
-## 🏛️ Architecture Overview
+##  Architecture Overview
 The pipeline is orchestrated by a central master script and divided into five distinct stages:
 * **Environment Cleanup:** Automated purging of legacy test data and checkpoints to prevent disk overflow.
 * **Multimodal Ingestion:** Retrieval of 100k+ atomic threat indicators via AlienVault OTX and network traffic subsets from the AWS Public Registry.
@@ -45,6 +45,7 @@ TraceGuard/
 ├── .env.example                  # Template for API keys
 ├── main.py                       # MASTER ORCHESTRATION SCRIPT
 └── requirements.txt              # Project dependencies
+```
 
 External Data Acquisition
 This project utilizes the HDFS_v1 system log dataset (1.47 GB). Due to GitHub file size limits, this must be downloaded manually:
@@ -55,7 +56,7 @@ Download: Locate and download HDFS_1.tar.gz (1.47 GiB).
 
 Extraction: Extract the archive to find the raw log file named HDFS.log.
 
-Placement: * Move the file to: TraceGuard/data/raw/
+Placement: Move the file to TraceGuard/data/raw/.
 
 Rename: You must rename the file to HDFS_large.log for the automation scripts to recognize it.
 
@@ -78,6 +79,8 @@ pip install -r requirements.txt
 API Key: Obtain a free API key from AlienVault OTX.
 
 Environment Variables: Copy .env.example to a new file named .env and add: OTX_API_KEY=your_actual_key_here.
+
+Local Data: Ensure the data/raw/HDFS_large.log file is present in the directory.
 
  How to Run
 Step 1: Start Infrastructure
@@ -116,5 +119,4 @@ Partition Tuning: Restricted Spark shuffle partitions to 1 or 2 to prevent exces
 
 Memory Management: Capped Spark driver and executor memory at 1g to ensure stability alongside host system processes.
 
-
----
+JVM Compatibility: Specifically tuned for Java 17 via dynamic --add-opens reflection flags in the SparkSession builder.
