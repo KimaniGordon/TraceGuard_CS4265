@@ -48,8 +48,12 @@ TraceGuard/
 ```
 ---
 ## External Data Acquisition
+** *To accommodate different hardware constraints and grading timelines, you may choose one of the following two data scales. Both files must be placed in data/raw/ and renamed to HDFS_large.log for the pipeline to recognize them.**
 
-* **Dataset Context:** This project utilizes the HDFS_v1 system log dataset (1.47 GB). Due to GitHub file size limits, this must be downloaded manually.
+* **Dataset Context:**
+
+ A 500,000-line subset of the HDFS log (~100 MB) (Benefit: Completes the Spark Processing stage in approximately 2 minutes.) or Full-Scale HDFS Log (1.47 GB)
+ The sample subset is already in the data/raw location of this repository. If you choose the larger dataset, download that file with one of the links below.
 
 * **Source:** Visit the [logpai/loghub](https://github.com/logpai/loghub) GitHub repository or the [Loghub Zenodo](https://zenodo.org/records/8196385) page.
 
