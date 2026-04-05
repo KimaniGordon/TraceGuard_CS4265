@@ -97,6 +97,8 @@ Known Malicious Botnets
 Note: If no pulses are subscribed, the pipeline will still function using the "POC Workaround" injected indicators.
 
 Environment Variables: Copy .env.example to a new file named .env and add: OTX_API_KEY=your_actual_key_here.
+Additionally, open the .env file and update the following value: HDFS_HOST = localhost:9000 (Example value). This must match your Hadoop config.
+How to Verify your HDFS_HOST? If you are unsure of your Hadoop address or port, you can verify them in your local Hadoop installation files. To do that, navigate to your Hadoop configuration directory (e.g., C:\hadoop\etc\hadoop\). Open the core-site.xml file. Look for the <name>fs.defaultFS</name> property.The value (e.g., hdfs://localhost:9000) contains the exact host and port you should use in your .env file.
 
 Local Data: Ensure the data/raw/HDFS_large.log file is present in the directory before execution.
 
