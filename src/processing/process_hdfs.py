@@ -7,12 +7,18 @@ def process_hdfs_logs():
     
     # 1. Initialize Spark with Java 17 fixes and tweaks
     #  Added the extraJavaOptions so Spark doesn't crash on my JDK
+    # inject these flags to allow Spark 3.x to bypass Java 17's encapsulation.
+    # This prevents 'IllegalAccessError' during large-scale log parsing.
     spark = SparkSession.builder \
-        .appName("TraceGuard_HDFS_Parsing") \
+        .appName("TraceGuard_HDFS_Batch") \
+        .config("spark.driver.memory", "1g") \
+        .config("spark.executor.memory", "1g") \
         .config("spark.driver.extraJavaOptions", 
-                "--add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.base/java.nio=ALL-UNNAMED --add-opens=java.base/sun.nio.ch=ALL-UNNAMED") \
+                "--add-opens=java.base/java.nio=ALL-UNNAMED "
+                "--add-opens=java.base/sun.nio.ch=ALL-UNNAMED") \
         .config("spark.executor.extraJavaOptions", 
-                "--add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.base/java.nio=ALL-UNNAMED --add-opens=java.base/sun.nio.ch=ALL-UNNAMED") \
+                "--add-opens=java.base/java.nio=ALL-UNNAMED "
+                "--add-opens=java.base/sun.nio.ch=ALL-UNNAMED") \
         .getOrCreate()
     
     try:

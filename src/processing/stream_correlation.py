@@ -14,14 +14,22 @@ from src.config import (
 
 def start_streaming():
     # 1. Initialize the Engine
+    # --- MODERN JVM CONFIGURATION ---
+    # Essential for Spark Structured Streaming on Java 17+.
+    # This ensures the 'Checkpointing' and 'State Management' work without JVM crashes.
     spark = SparkSession.builder \
-        .appName("TraceGuard-Velocity-Simulation") \
-        .config("spark.driver.memory", "1g") \
+        .appName("TraceGuard_Speed_Layer") \
         .config("spark.sql.shuffle.partitions", "2") \
+        .config("spark.driver.extraJavaOptions", 
+                "--add-opens=java.base/java.nio=ALL-UNNAMED "
+                "--add-opens=java.base/sun.nio.ch=ALL-UNNAMED") \
+        .config("spark.executor.extraJavaOptions", 
+                "--add-opens=java.base/java.nio=ALL-UNNAMED "
+                "--add-opens=java.base/sun.nio.ch=ALL-UNNAMED") \
         .getOrCreate()
-
+    
     # 2. Path Verification for Schema Inference
-    #  use the local sample to 'teach' Spark the column names
+    # use the local sample to 'teach' Spark the column names
     SAMPLE_FILE = os.path.join(TRAFFIC_INPUT_DIR, "aws_subset.csv")
 
     if not os.path.exists(SAMPLE_FILE):
@@ -50,7 +58,7 @@ def start_streaming():
     )
 
     # 6. POC WORKAROUND: Mocking the 'Src IP' 
-    # Using '111.11.1.1' to test the join against  OTX data
+    # Using '111.11.1.1' to test the join against OTX data
     stream_with_ip = network_stream.withColumn("Src IP", lit("111.11.1.1")) 
 
     # 7. Perform the Broadcast Join

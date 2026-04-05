@@ -1,22 +1,28 @@
 import os
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import col, lower, trim, current_timestamp, to_timestamp
+from pyspark.sql.functions import col, lower, trim, current_timestamp
 from pyspark.sql.types import StructType, StructField, StringType
 from src.config import RAW_INTEL_PATH, INTEL_PARQUET_DIR
 
 def run_transformations(input_path=RAW_INTEL_PATH):
     print("[INFO] Starting Optimized Spark Engine...")
     
-    # 1. 'Emergency' Configuration
-    # I droped shuffle partitions to 1 so Spark doesn't try to multitask on 100 files at once.
+    # 1. 'Modern JVM' Configuration
+    # These extraJavaOptions allow Spark 3.x to run on Java 17+ without 
+    # the professor needing to edit spark-defaults.conf or env variables.
     spark = SparkSession.builder \
         .appName("TraceGuard_Normalization") \
         .config("spark.driver.memory", "768m") \
         .config("spark.sql.shuffle.partitions", "1") \
+        .config("spark.driver.extraJavaOptions", 
+                "--add-opens=java.base/java.nio=ALL-UNNAMED "
+                "--add-opens=java.base/sun.nio.ch=ALL-UNNAMED") \
+        .config("spark.executor.extraJavaOptions", 
+                "--add-opens=java.base/java.nio=ALL-UNNAMED "
+                "--add-opens=java.base/sun.nio.ch=ALL-UNNAMED") \
         .getOrCreate()
     
-    # 2. Define Schema Upfront (No more 'inferSchema' hang)
-    # This prevents Spark from pre-scanning the 100k records.
+    # 2. Define Schema Upfront
     intel_schema = StructType([
         StructField("indicator", StringType(), True),
         StructField("type", StringType(), True),
@@ -34,10 +40,8 @@ def run_transformations(input_path=RAW_INTEL_PATH):
             .withColumn("type", lower(trim(col("type")))) \
             .withColumn("processed_at", current_timestamp())
 
-        # 5. Distributed Storage (Simplified for Low Disk Space)
-        # REMOVE .partitionBy("type") because it creates too much disk overhead on Windows
+        # 5. Distributed Storage
         print(f"[INFO] Writing to {INTEL_PARQUET_DIR}...")
-        
         processed_df.write.mode("overwrite").parquet(INTEL_PARQUET_DIR)
             
         print(f"[SUCCESS] 100k indicators processed. No hang detected!")
