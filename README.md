@@ -1,20 +1,33 @@
-TraceGuard: Unified Big Data IDS Pipeline
+#  TraceGuard: Unified Big Data IDS Pipeline
 
-TraceGuard is a high-performance Intrusion Detection System (IDS) prototype built on the Lambda Architecture. It demonstrates the ability to process massive historical log datasets (Batch Layer) while simultaneously correlating high-velocity network traffic against real-time threat intelligence (Speed Layer).
+**TraceGuard** is a high-performance Intrusion Detection System (IDS) prototype built on a **Lambda Architecture**. It demonstrates the ability to process massive historical log datasets (**Batch Layer**) while simultaneously correlating high-velocity network traffic against real-time threat intelligence (**Speed Layer**).
 
-Project Directory Structure
+---
+
+## 🏛️ Architecture Overview
+The pipeline is orchestrated by a central master script and divided into five distinct stages:
+* **Environment Cleanup:** Automated purging of legacy test data and checkpoints to prevent disk overflow.
+* **Multimodal Ingestion:** Retrieval of 100k+ atomic threat indicators via AlienVault OTX and network traffic subsets from the AWS Public Registry.
+* **Distributed Storage:** Migration of raw telemetry (1.47GB logs) into the HDFS cluster.
+* **Spark Processing:** Large-scale log parsing and indicator normalization using optimized Spark configurations.
+* **Serving & Speed Layers:** Populating HBase for low-latency lookups and launching a Spark Structured Streaming engine for real-time detection.
+
+---
+
+##  Project Directory Structure
+```text
 TraceGuard/
 ├── data/                         # Project data storage
-│   ├── raw/                      # Landing zone for all raw data
+│   ├── raw/                      # Landing zone for raw data
 │   │   ├── network_traffic/      # AWS Traffic CSVs
-│   │   ├── HDFS_large.log        # Raw 1.47GB HDFS logs
+│   │   ├── HDFS_large.log        # Raw 1.47GB HDFS logs (Manual Download)
 │   │   └── threat_intel_raw.csv  # Raw OTX indicators
-│   ├── processed/                # Normalized data outputs
+│   ├── processed/                # Normalized outputs
 │   │   ├── threat_indicators.parquet/ # Structured threat intel
 │   │   └── alerts/               # Real-time detection hits
 │   └── checkpoints/              # Spark streaming metadata
 ├── src/                          # Source code modules
-│   ├── __init__.py               
+│   ├── __init__.py
 │   ├── config.py                 # Centralized configuration & paths
 │   ├── ingestion/                # Data collection layer
 │   │   ├── fetch_aws.py          # AWS S3 download logic
@@ -31,37 +44,22 @@ TraceGuard/
 │       └── view_alerts.py        # Alert summary utility
 ├── .env.example                  # Template for API keys
 ├── main.py                       # MASTER ORCHESTRATION SCRIPT
-├── requirements.txt              # Project dependencies
-└── README.md                     # Project documentation
-🏛️ Architecture Overview
-The pipeline is divided into five distinct stages orchestrated by a central master script:
+└── requirements.txt              # Project dependencies
 
-Environment Cleanup: Automated purging of legacy test data and checkpoints to prevent disk overflow.
+External Data Acquisition
+This project utilizes the HDFS_v1 system log dataset (1.47 GB). Due to GitHub file size limits, this must be downloaded manually:
 
-Multimodal Ingestion: Automated retrieval of 100k+ atomic threat indicators via AlienVault OTX and network traffic subsets from the AWS Public Registry.
-
-Distributed Storage: Migration of raw telemetry (1.47GB logs) into the HDFS cluster.
-
-Spark Processing: Large-scale log parsing and indicator normalization using optimized Spark configurations.
-
-Serving & Speed Layers: Populating HBase for low-latency lookups and launching a Spark Structured Streaming engine for real-time detection.
-
-
-This project uses the HDFS_v1 system log dataset (1.47 GB) for distributed batch parsing. Due to file size limits, this must be downloaded manually:
-
-Source: Visit the logpai/loghub GitHub repository or go directly to the Loghub Zenodo page.
+Source: Visit the logpai/loghub GitHub repository or the Loghub Zenodo page.
 
 Download: Locate and download HDFS_1.tar.gz (1.47 GiB).
 
 Extraction: Extract the archive to find the raw log file named HDFS.log.
 
-Placement:
+Placement: * Move the file to: TraceGuard/data/raw/
 
-Move the file to: TraceGuard/data/raw/
+Rename: You must rename the file to HDFS_large.log for the automation scripts to recognize it.
 
-Rename: You must rename HDFS.log to HDFS_large.log for the automation scripts to recognize it.
-
- Prerequisites & Setup
+ Setup & Prerequisites
 1. System Requirements
 Java 17: (Required for Spark 3.x compatibility).
 
@@ -72,52 +70,51 @@ HBase 2.x: (Master and RegionServer must be active).
 Python 3.9+
 
 2. Installation
-Install the Python dependencies:
+Install the required Python libraries:
 
 PowerShell
 pip install -r requirements.txt
 3. Configuration
 API Key: Obtain a free API key from AlienVault OTX.
 
-Environment Variables: Copy .env.example to a new file named .env and add your key:
-OTX_API_KEY=your_actual_key_here.
-
-Local Data: Ensure the data/raw/HDFS_large.log file is present in the directory.
+Environment Variables: Copy .env.example to a new file named .env and add: OTX_API_KEY=your_actual_key_here.
 
  How to Run
-Step 1: Start the Infrastructure
-Open three separate terminals and start the following services:
+Step 1: Start Infrastructure
+Open three separate terminals and start services in this exact order:
 
 Hadoop: start-all.cmd
 
 HBase: start-hbase.cmd
 
-HBase Thrift: hbase thrift start -p 9090 (Crucial for Python connectivity).
+HBase Thrift: hbase thrift start -p 9090 (Required for Python connectivity).
 
 Step 2: Execute the Pipeline
-Run the entire end-to-end system with a single command:
+Run the entire system with a single command from the project root:
 
 PowerShell
 python main.py
- Testing the Correlation
-To verify the Speed Layer is working, the system uses a Mock IP Strategy.
-
-The streaming engine injects a test IP (111.11.1.1) into the incoming AWS traffic.
-
-This IP is cross-referenced against the HBase Serving Layer.
-
-Successful matches are written in real-time to data/processed/alerts/.
-
-Querying the Results
-You can interact with the system while the stream is active using these utilities:
+ Querying the Results
+While the stream is active, use these utilities to interact with the system:
 
 1. Lookup a Threat (Serving Layer)
-Check if a specific IP exists in your HBase threat intelligence table:
+Check if a specific IP exists in the HBase threat intelligence table:
 
 PowerShell
 python -m src.utils.query_intel 111.11.1.1
 2. View Detection Hits (Speed Layer)
-View a human-readable summary of the real-time alerts generated by the stream:
+Display a human-readable summary of real-time alerts generated by the stream:
 
 PowerShell
 python -m src.utils.view_alerts
+ Technical Optimization Notes
+To support execution on consumer-grade hardware with restricted disk space (~5GB), the following optimizations were implemented:
+
+Feature Selection: Pruned network telemetry from 80+ features to the core 5-tuple, reducing memory overhead by 80%.
+
+Partition Tuning: Restricted Spark shuffle partitions to 1 or 2 to prevent excessive disk "spilling."
+
+Memory Management: Capped Spark driver and executor memory at 1g to ensure stability alongside host system processes.
+
+
+---
