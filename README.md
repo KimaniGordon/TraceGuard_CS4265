@@ -85,6 +85,16 @@ pip install -r requirements.txt
 
 * **3. Configuration**
 API Key: Obtain a free API key from [AlienVault OTX](https://otx.alienvault.com/).
+Note on Threat Intelligence (OTX):
+To populate the Serving Layer, your OTX account must be subscribed to active pulses. For the best results during the demo, I recommend subscribing to the following public pulses on the [OTX Portal](https://otx.alienvault.com/) (You must create a free account):
+
+AlienVault Stock Pulse (General malicious IPs)
+
+Brute Force/Scanner IPs
+
+Known Malicious Botnets
+
+Note: If no pulses are subscribed, the pipeline will still function using the "POC Workaround" injected indicators.
 
 Environment Variables: Copy .env.example to a new file named .env and add: OTX_API_KEY=your_actual_key_here.
 
