@@ -46,6 +46,21 @@ Spark Processing: Large-scale log parsing and indicator normalization using opti
 
 Serving & Speed Layers: Populating HBase for low-latency lookups and launching a Spark Structured Streaming engine for real-time detection.
 
+
+This project uses the HDFS_v1 system log dataset (1.47 GB) for distributed batch parsing. Due to file size limits, this must be downloaded manually:
+
+Source: Visit the logpai/loghub GitHub repository or go directly to the Loghub Zenodo page.
+
+Download: Locate and download HDFS_1.tar.gz (1.47 GiB).
+
+Extraction: Extract the archive to find the raw log file named HDFS.log.
+
+Placement:
+
+Move the file to: TraceGuard/data/raw/
+
+Rename: You must rename HDFS.log to HDFS_large.log for the automation scripts to recognize it.
+
  Prerequisites & Setup
 1. System Requirements
 Java 17: (Required for Spark 3.x compatibility).
