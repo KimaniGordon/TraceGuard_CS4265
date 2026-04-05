@@ -1,15 +1,14 @@
 import os
-import shutil
 
 def run_hdfs_ingestion():
-    source_file = "data/raw/HDFS_2k.log"
+    # Update this to the name of the file you extracted from HDFS_v1
+    source_file = "data/raw/HDFS_large.log" 
     
     if os.path.exists(source_file):
-        print(f"[INFO] HDFS logs found at {source_file}")
-        # In a real pipeline, we might move/rename this for versioning
+        print(f"[INFO] Large HDFS logs (1.47GB) found at {source_file}")
         return source_file
     else:
-        print("[ERROR] hdfs_2k.log missing from data/raw/")
+        print(f"[ERROR] {source_file} missing. Please extract HDFS.log from HDFS_1.tar.gz")
         return None
 
 if __name__ == "__main__":

@@ -3,10 +3,10 @@ import requests
 import pandas as pd
 from dotenv import load_dotenv
 
-load_dotenv()
-API_KEY = os.getenv("OTX_API_KEY")
-
 def run_ingestion():
+    load_dotenv()
+    API_KEY = os.getenv("OTX_API_KEY")
+
     if not API_KEY:
         print("[ERROR] OTX_API_KEY not found in .env")
         return None
@@ -16,7 +16,7 @@ def run_ingestion():
     headers = {"X-OTX-API-KEY": API_KEY}
     
     try:
-        #  Added timeout and error checking [cite: 43-45]
+        # Added timeout and error checking
         response = requests.get(url, headers=headers, timeout=20)
         response.raise_for_status()
         pulses = response.json().get("results", [])
@@ -51,3 +51,4 @@ def run_ingestion():
     
 if __name__ == "__main__":
     run_ingestion()
+    print("[SUCCESS] Threat intelligence downloaded.")

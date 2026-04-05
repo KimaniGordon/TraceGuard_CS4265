@@ -1,3 +1,8 @@
-requests
+pyspark
+happybase
 pandas
 python-dotenv
+pyarrow
+thrift
+boto3
+requests

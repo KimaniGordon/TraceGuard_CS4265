@@ -1,13 +1,108 @@
-# TraceGuard: Distributed Log Correlation Engine
+TraceGuard: Unified Big Data IDS Pipeline
 
-## Project Structure (Milestone 2 Verified)
-```text
-├── data/
-│   ├── raw/          <-- threat_sample.csv is here (M2 goal)
-│   └── processed/    <-- (Placeholder for M3 Spark output)
-├── src/
-│   ├── ingest.py     <-- OTX API script (M2 goal)
-│   └── processing/   <-- (Placeholder for M3 PySpark scripts)
-├── .env.example      <-- Security documentation (M2 goal)
-├── requirements.txt  <-- Dependencies documented
-└── README.md
+TraceGuard is a high-performance Intrusion Detection System (IDS) prototype built on the Lambda Architecture. It demonstrates the ability to process massive historical log datasets (Batch Layer) while simultaneously correlating high-velocity network traffic against real-time threat intelligence (Speed Layer).
+
+Project Directory Structure
+TraceGuard/
+├── data/                         # Project data storage
+│   ├── raw/                      # Landing zone for all raw data
+│   │   ├── network_traffic/      # AWS Traffic CSVs
+│   │   ├── HDFS_large.log        # Raw 1.47GB HDFS logs
+│   │   └── threat_intel_raw.csv  # Raw OTX indicators
+│   ├── processed/                # Normalized data outputs
+│   │   ├── threat_indicators.parquet/ # Structured threat intel
+│   │   └── alerts/               # Real-time detection hits
+│   └── checkpoints/              # Spark streaming metadata
+├── src/                          # Source code modules
+│   ├── __init__.py               
+│   ├── config.py                 # Centralized configuration & paths
+│   ├── ingestion/                # Data collection layer
+│   │   ├── fetch_aws.py          # AWS S3 download logic
+│   │   ├── fetch_otx.py          # OTX threat intel logic
+│   │   └── load_data.py          # HDFS log uploader
+│   ├── processing/               # Logic and Serving layer
+│   │   ├── data_cleanse.py       # Automated cleanup utility
+│   │   ├── load_hbase.py         # HBase serving layer loader
+│   │   ├── process_hdfs.py       # Batch log parser
+│   │   ├── spark_engine.py       # Indicator normalization engine
+│   │   └── stream_correlation.py  # Real-time detection engine
+│   └── utils/                    # Query and Visualization layer
+│       ├── query_intel.py        # HBase serving layer lookup
+│       └── view_alerts.py        # Alert summary utility
+├── .env.example                  # Template for API keys
+├── main.py                       # MASTER ORCHESTRATION SCRIPT
+├── requirements.txt              # Project dependencies
+└── README.md                     # Project documentation
+🏛️ Architecture Overview
+The pipeline is divided into five distinct stages orchestrated by a central master script:
+
+Environment Cleanup: Automated purging of legacy test data and checkpoints to prevent disk overflow.
+
+Multimodal Ingestion: Automated retrieval of 100k+ atomic threat indicators via AlienVault OTX and network traffic subsets from the AWS Public Registry.
+
+Distributed Storage: Migration of raw telemetry (1.47GB logs) into the HDFS cluster.
+
+Spark Processing: Large-scale log parsing and indicator normalization using optimized Spark configurations.
+
+Serving & Speed Layers: Populating HBase for low-latency lookups and launching a Spark Structured Streaming engine for real-time detection.
+
+ Prerequisites & Setup
+1. System Requirements
+Java 17: (Required for Spark 3.x compatibility).
+
+Hadoop 3.x: (NameNode and DataNode must be active).
+
+HBase 2.x: (Master and RegionServer must be active).
+
+Python 3.9+
+
+2. Installation
+Install the Python dependencies:
+
+PowerShell
+pip install -r requirements.txt
+3. Configuration
+API Key: Obtain a free API key from AlienVault OTX.
+
+Environment Variables: Copy .env.example to a new file named .env and add your key:
+OTX_API_KEY=your_actual_key_here.
+
+Local Data: Ensure the data/raw/HDFS_large.log file is present in the directory.
+
+ How to Run
+Step 1: Start the Infrastructure
+Open three separate terminals and start the following services:
+
+Hadoop: start-all.cmd
+
+HBase: start-hbase.cmd
+
+HBase Thrift: hbase thrift start -p 9090 (Crucial for Python connectivity).
+
+Step 2: Execute the Pipeline
+Run the entire end-to-end system with a single command:
+
+PowerShell
+python main.py
+ Testing the Correlation
+To verify the Speed Layer is working, the system uses a Mock IP Strategy.
+
+The streaming engine injects a test IP (111.11.1.1) into the incoming AWS traffic.
+
+This IP is cross-referenced against the HBase Serving Layer.
+
+Successful matches are written in real-time to data/processed/alerts/.
+
+Querying the Results
+You can interact with the system while the stream is active using these utilities:
+
+1. Lookup a Threat (Serving Layer)
+Check if a specific IP exists in your HBase threat intelligence table:
+
+PowerShell
+python -m src.utils.query_intel 111.11.1.1
+2. View Detection Hits (Speed Layer)
+View a human-readable summary of the real-time alerts generated by the stream:
+
+PowerShell
+python -m src.utils.view_alerts

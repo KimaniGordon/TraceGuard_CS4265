@@ -1,40 +1,49 @@
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import regexp_extract, col
+import os
 
 def process_hdfs_logs():
     print("[INFO] Starting Spark Engine for HDFS log parsing...")
     
-    # Initialize Spark
+    # 1. Initialize Spark with Java 17 fixes and tweaks
+    #  Added the extraJavaOptions so Spark doesn't crash on my JDK
     spark = SparkSession.builder \
         .appName("TraceGuard_HDFS_Parsing") \
+        .config("spark.driver.extraJavaOptions", 
+                "--add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.base/java.nio=ALL-UNNAMED --add-opens=java.base/sun.nio.ch=ALL-UNNAMED") \
+        .config("spark.executor.extraJavaOptions", 
+                "--add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.base/java.nio=ALL-UNNAMED --add-opens=java.base/sun.nio.ch=ALL-UNNAMED") \
         .getOrCreate()
     
     try:
-        # 1. Load the raw text file
-        # Path: data/raw/HDFS_2k.log
-        raw_logs = spark.read.text("data/raw/HDFS_2k.log")
+        # 2. Load the 1.5 GB file from HDFS
+        # hdfs://localhost:9000 prefix
+        input_path = "hdfs://localhost:9000/traceguard/raw/logs/HDFS_large.log"
+        print(f"[INFO] Reading data from: {input_path}")
+        raw_logs = spark.read.text(input_path)
         
-        # 2. Define the Regex Pattern
-        # This pattern matches: [Date] [Time] [PID] [Level] [Component]: [Message]
-        log_pattern = r'^(\d{6})\s+(\d{6})\s+(\d+)\s+(\w+)\s+([^:]+):\s+(.*)$'
+        # 3. This defines the Regex Pattern
+        # This matches: [Date] [Time] [PID] [Level] [Component]: [Message with BlockID]
+        log_pattern = r'^(\d{6})\s+(\d{6})\s+(\d+)\s+(\w+)\s+([^:]+):\s+(.*(blk_-?\d+).*)$'
         
-        # 3. Apply the transformation
+        # 4. Extract structured columns
         parsed_df = raw_logs.select(
             regexp_extract(col("value"), log_pattern, 1).alias("date"),
             regexp_extract(col("value"), log_pattern, 2).alias("time"),
-            regexp_extract(col("value"), log_pattern, 3).alias("pid"),
             regexp_extract(col("value"), log_pattern, 4).alias("level"),
             regexp_extract(col("value"), log_pattern, 5).alias("component"),
+            regexp_extract(col("value"), log_pattern, 7).alias("block_id"), # Crucial for joins
             regexp_extract(col("value"), log_pattern, 6).alias("message")
         )
         
-        # 4. Save to Processed folder as Parquet
-        output_path = "data/processed/hdfs_logs_processed.parquet"
+        # 5. Save back to HDFS as Parquet (The standard for Big Data)
+        # Saving to HDFS ensures the data stays distributed
+        output_path = "hdfs://localhost:9000/traceguard/processed/hdfs_logs_v1"
+        
+        print(f"[INFO] Processing 1.5 GB. Writing to {output_path}...")
         parsed_df.write.mode("overwrite").parquet(output_path)
         
-        print(f"[INFO] Success! HDFS logs converted to Parquet at {output_path}")
-        
-        # Show a sample of the structured data
+        print(f"[SUCCESS] HDFS logs converted to Parquet in the cluster!")
         parsed_df.show(10, truncate=False)
         
     except Exception as e:
