@@ -133,7 +133,7 @@ Terminal 2 (HBase): Execute **start-hbase.cmd* to initialize the NoSQL layer.
 Terminal 3 (Thrift): Execute **hbase thrift start -p 9090* (Crucial for Python-to-HBase connectivity).
 
 * **Step 2: Execute the Pipeline**
-Master Command: Run the entire end-to-end system with a single command from the project root:
+Master Command: Run the entire end-to-end system with a single command from the project root in an administrator terminal window (PowerShell):
 
 PowerShell
 python main.py
