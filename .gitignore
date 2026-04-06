@@ -218,4 +218,4 @@ hadoop/
 
 # Ignore Spark Streaming State
 data/checkpoints/
-**/_spark_metadata/
+**/_spark_metadata/data/processed/
