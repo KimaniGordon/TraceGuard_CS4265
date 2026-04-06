@@ -89,7 +89,7 @@ Python 3.11.x: Standard Python environment for script orchestration.
 
 Spark: PySpark 3.4.1
 
-## Important: Running on Java 17
+# Important: Running on Java 17
 This project was developed using Java 17. Because Java 17 restricts access to certain internal libraries that Spark and Hadoop rely on for performance, you must set the following environment variable before running the hadoop and h-base scripts:
 
 ***For PowerShell (Windows):**
