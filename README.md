@@ -17,34 +17,33 @@ The pipeline is orchestrated by a central master script and divided into five di
 ##  Project Directory Structure
 ```text
 TraceGuard/
-├── data/                         # Project data storage
-│   ├── raw/                      # Landing zone for raw data
-│   │   ├── network_traffic/      # AWS Traffic CSVs
-│   │   ├── HDFS_large.log        # Raw 1.47GB HDFS logs (Manual Download)
-│   │   └── threat_intel_raw.csv  # Raw OTX indicators
-│   ├── processed/                # Normalized outputs
-│   │   ├── threat_indicators.parquet/ # Structured threat intel
-│   │   └── alerts/               # Real-time detection hits
-│   └── checkpoints/              # Spark streaming metadata
-├── src/                          # Source code modules
-│   ├── __init__.py
-│   ├── config.py                 # Centralized configuration & paths
-│   ├── ingestion/                # Data collection layer
-│   │   ├── fetch_aws.py          # AWS S3 download logic
-│   │   ├── fetch_otx.py          # OTX threat intel logic
-│   │   └── load_data.py          # HDFS log uploader
-│   ├── processing/               # Logic and Serving layer
-│   │   ├── data_cleanse.py       # Automated cleanup utility
-│   │   ├── load_hbase.py         # HBase serving layer loader
-│   │   ├── process_hdfs.py       # Batch log parser
-│   │   ├── spark_engine.py       # Indicator normalization engine
-│   │   └── stream_correlation.py  # Real-time detection engine
-│   └── utils/                    # Query and Visualization layer
-│       ├── query_intel.py        # HBase serving layer lookup
-│       └── view_alerts.py        # Alert summary utility
-├── .env.example                  # Template for API keys
-├── main.py                       # MASTER ORCHESTRATION SCRIPT
-└── requirements.txt              # Project dependencies
+├── data/
+│   ├── raw/
+│   │   ├── HDFS_large.log             # The 66MB sample for Batch Layer
+│   │   ├── network_traffic/           # Empty (Populated by Stage 1)
+│   │   └── threat_intel_raw.csv       # Ignored (Populated by Stage 1)
+│   └── processed/
+│       └── alerts/                    # Target for Speed Layer JSONs
+├── src/
+│   ├── config.py                      # Centralized Localhost/Path settings
+│   ├── ingestion/
+│   │   ├── fetch_otx.py               # API: Pulls latest threat intel
+│   │   ├── fetch_aws.py               # API: Pulls 350MB traffic log
+│   │   └── load_data.py               # HDFS: Moves files to cluster
+│   ├── processing/
+│   │   ├── data_cleanse.py            # Spark: Pre-processing & Deduplication
+│   │   ├── spark_engine.py            # Spark: Normalization Engine
+│   │   ├── process_hdfs.py            # Spark: Log Parsing
+│   │   ├── load_hbase.py              # HBase: Serving Layer Ingestion
+│   │   └── stream_correlation.py      # Streaming: Real-time Speed Layer
+│   └── utils/
+│       ├── browse_hbase.py            # Diagnostic: View Serving Layer
+│       ├── search_threat.py           # Forensic: Keyword search
+│       ├── reset_hbase.py             # Maintenance: Clear/Recreate Table
+│       └── query_intel.py             # Forensic: Single IP lookup
+├── main.py                            # THE MASTER ORCHESTRATOR
+├── .gitignore                         # Prevents 350MB+ bloat
+└── README.md                          # Architecture & Run Instructions
 ```
 ---
 ## External Data Acquisition
