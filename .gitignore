@@ -56,7 +56,7 @@ cover/
 *.pot
 
 # Django stuff:
-*.log
+
 local_settings.py
 db.sqlite3
 db.sqlite3-journal
@@ -206,8 +206,12 @@ marimo/_static/
 marimo/_lsp/
 __marimo__/
 
+# Ignore Raw Data (Fetched by script)
+data/raw/threat_intel_raw.csv
+data/raw/network_traffic/aws_subset.csv
+
 # TraceGuard Project Data
-data/
+
 spark-warehouse/
 metastore_db/
 hadoop/

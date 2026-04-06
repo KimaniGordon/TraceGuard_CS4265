@@ -28,7 +28,7 @@ def load_to_hbase():
         # 2. Table Setup
         tables = [t.decode('utf-8') for t in connection.tables()]
         if 'threat_intel' not in tables:
-            connection.create_table('threat_intel', {'intel': dict()})
+            connection.create_table('threat_intel', {'cf': dict()})
             print("[INFO] Created new table: 'threat_intel'")
 
         table = connection.table('threat_intel')
@@ -43,13 +43,21 @@ def load_to_hbase():
         df = pd.read_parquet(INTEL_PARQUET_DIR)
         print(f"[INFO] Ingesting {len(df)} indicators into HBase...")
 
-        # 5. Batch Load (Efficient for 10k+ rows)
+        # 5. Batch Load (Optimized for Big Data)
+        print(f"[INFO] Ingesting {len(df)} rows into HBase...")
         with table.batch(batch_size=1000) as b:
             for _, row in df.iterrows():
-                # Encode to bytes (HBase standard)
+                # 1. Define the Row Key (The unique identifier)
                 indicator_key = str(row['indicator']).encode()
-                intel_value = str(row['type']).encode()
-                b.put(indicator_key, {b'intel:type': intel_value})
+                
+                # 2. Put all attributes under the 'cf' Column Family
+                b.put(indicator_key, {
+                    b'cf:type': str(row['type']).encode(),
+                    b'cf:description': str(row['description']).encode(),
+                    b'cf:processed_at': str(row['processed_at']).encode()
+                })
+        
+        print("[SUCCESS] Data transformation and load complete.")
         
         print(f"[SUCCESS] TraceGuard Serving Layer populated with {len(df)} entries.")
 

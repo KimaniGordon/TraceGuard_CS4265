@@ -14,9 +14,13 @@ def deep_clean():
             print(f"[CLEANER] Reset local folder: {path}")
 
     # 2. Clear HDFS Temporary/Output Files
-    #  keep the 'raw' folder in HDFS so I don't have to re-upload 2GB
-    subprocess.run(["hadoop", "fs", "-rm", "-r", "/traceguard/processed/"], stderr=subprocess.DEVNULL)
-    print("[CLEANER] Reset HDFS processed directory.")
+    print("[CLEANER] Attempting to reset HDFS processed directory...")
+    try:
+        # Adding shell=True and check=False so it doesn't crash if the folder doesn't exist yet
+        subprocess.run("hadoop fs -rm -r /traceguard/processed/", shell=True, stderr=subprocess.DEVNULL, check=False)
+        print("[CLEANER] Reset HDFS processed directory.")
+    except Exception as e:
+        print(f"[CLEANER] Skip HDFS cleanup: {e} (Hadoop might not be in PATH)")
 
     # 3. HBase Flush (Optional but helpful)
     # This forces HBase to move data from RAM (MemStore) to Disk (HFile)

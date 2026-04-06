@@ -55,10 +55,18 @@ def run_traceguard_pipeline():
     run_transformations()
     process_hdfs_logs()
 
-    # STAGE 4: SERVING LAYER
+    # --- [STAGE 4: HBASE SERVING LAYER LOAD] ---
     # Populating HBase for fast lookups
     print("\n--- [STAGE 4: HBASE SERVING LAYER LOAD] ---")
-    load_to_hbase()
+    
+    # Imports moved to the top of the file usually, but added here for personal prefrence
+    from src.utils.browse_hbase import run_browse 
+    
+    load_to_hbase()  # Runs the ingestion into HBase
+    
+    # Updated to 25 to show the "Big Data" scale and variety of threats
+    print("\n[RESULTS] Previewing HBase Serving Layer (Random Sample of 25 Records)...")
+    run_browse(limit=25)
 
     # STAGE 5: SPEED LAYER (STREAMING)
     # This is the 'Blocking' step - it stays active until you stop it
