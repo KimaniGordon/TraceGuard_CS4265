@@ -1,35 +1,42 @@
 import happybase
 import sys
-# Using the host configuration from central config
-from src.config import HDFS_HOST
 
-def lookup_indicator(indicator):
-    thrift_host = HDFS_HOST.split(':')[0]
-    
+def query_indicator(indicator):
     try:
-        # Establish connection to the Thrift Gateway
-        connection = happybase.Connection(host=thrift_host, port=9090)
+        # Connect to HBase
+        connection = happybase.Connection('localhost', port=9090)
         table = connection.table('threat_intel')
-        
-        # Retrieve the row for the specific indicator
+
+        # Get the row for the specific indicator
         row = table.row(indicator.encode())
-        
-        if row:
-            # Decode the byte-data back to a readable string
-            intel_type = row.get(b'intel:type').decode()
-            print(f"\n[MATCH FOUND]")
-            print(f"Indicator: {indicator}")
-            print(f"Threat Type: {intel_type}")
-        else:
-            print(f"\n[CLEAN] No records found for: {indicator}")
-            
+
+        if not row:
+            print(f"\n[!] NO MATCH FOUND for: {indicator}")
+            return
+
+        # Use .get() with a default empty byte string to prevent NoneType errors
+        # Note: using 'cf' as the column family prefix for all attributes
+        type_val = row.get(b'cf:type', b'N/A').decode()
+        desc_val = row.get(b'cf:description', b'No description available').decode()
+        proc_val = row.get(b'cf:processed_at', b'Unknown').decode()
+
+        print("\n" + "="*60)
+        print(f"  TRACEGUARD INTELLIGENCE MATCH")
+        print("="*60)
+        print(f"INDICATOR:    {indicator}")
+        print(f"TYPE:         {type_val}")
+        print(f"DESCRIPTION:  {desc_val}")
+        print(f"PROCESSED AT: {proc_val}")
+        print("="*60 + "\n")
+
+        connection.close()
+
     except Exception as e:
         print(f"[ERROR] HBase Query Failed: {e}")
-    finally:
-        connection.close()
+        print("Tip: Ensure 'hbase thrift start -p 9090' is running.")
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
-        print("Usage: python -m src.utils.query_intel <IP_OR_DOMAIN>")
+        print("Usage: python -m src.utils.query_intel <IP_OR_HASH>")
     else:
-        lookup_indicator(sys.argv[1])
+        query_indicator(sys.argv[1])

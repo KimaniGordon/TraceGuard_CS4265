@@ -82,3 +82,5 @@ if __name__ == "__main__":
         sys.exit(0)
     except Exception as e:
         print(f"\n Pipeline Failed: {e}")
+
+        #Ctrl C interrupt is expected when stopping the streaming layer, a pipeline failed message may occur but it's not an actual error. You can ignore it if you see it after stopping the stream.

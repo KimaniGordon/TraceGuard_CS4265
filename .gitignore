@@ -215,3 +215,7 @@ data/raw/network_traffic/aws_subset.csv
 spark-warehouse/
 metastore_db/
 hadoop/
+
+# Ignore Spark Streaming State
+data/checkpoints/
+**/_spark_metadata/
