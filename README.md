@@ -66,15 +66,39 @@ Rename the file to HDFS_large.log for the automation scripts to recognize it cor
 
 ---
 
+### 🖥️ Verified Environment (Milestone 3)
+The TraceGuard pipeline has been verified on the following 2026 "Modern Enterprise" stack:
+
+* **Java:** OpenJDK 17.0.18 LTS (Microsoft Build)
+* **Hadoop:** 3.4.3 (Standalone Distributed Mode)
+* **HBase:** 2.5.13 (Thrift 1 Gateway enabled)
+* **Spark:** PySpark 4.1.1 (Standard Distribution)
+* **Python:** 3.14.2
+
+**Configuration Note:** Due to Java 17's modularity constraints, the `JDK_JAVA_OPTIONS` environment variable is required to enable Spark/HDFS internal reflection. See the [Setup] section for the specific export command.
+
 ## Setup & Prerequisites
-* **1. System Requirements**
-Java 17: Required for Spark 3.x compatibility and modern JVM features.
+* **1.  General System Requirements (if you dont use the setup above and would to skip using Java 17) **
+Java 11 (LTS): Required for Spark 3.x compatibility and modern JVM features.
 
-Hadoop 3.x: NameNode and DataNode must be configured and active.
+Hadoop 3.3.6: NameNode and DataNode must be configured and active.
 
-HBase 2.x: Master and RegionServer must be configured and active.
+HBase 2.5.5: Master and RegionServer must be configured and active.
 
-Python 3.9+: Standard Python environment for script orchestration.
+Python 3.11.x: Standard Python environment for script orchestration.
+
+Spark: PySpark 3.4.1
+
+## Important: Running on Java 17
+This project was developed using Java 17. Because Java 17 restricts access to certain internal libraries that Spark and Hadoop rely on for performance, you must set the following environment variable before running the hadoop and h-base scripts:
+
+***For PowerShell (Windows):**
+$env:JDK_JAVA_OPTIONS = "--add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=j
+
+*"Note: This project is optimized for Java 17. If using Java 8 or 11, the JDK_JAVA_OPTIONS environment variable is not required and may be omitted."*
+
+
+**Configuration Note:** Due to Java 17's modularity constraints, the `JDK_JAVA_OPTIONS` environment variable is required to enable Spark/HDFS internal reflection. See the [Setup] section for the specific export command.
 
 * **2. Installation**
 Dependency Setup: Install the required Python libraries via pip:
@@ -105,11 +129,11 @@ Local Data: Ensure the data/raw/HDFS_large.log file is present in the directory 
 
 ## How to Run
 * **Step 1: Start Infrastructure**
-Terminal 1 (Hadoop): Execute start-all.cmd to wake up the HDFS cluster.
+Terminal 1 (Hadoop): Execute **start-all.cmd* to wake up the HDFS cluster.
 
-Terminal 2 (HBase): Execute start-hbase.cmd to initialize the NoSQL layer.
+Terminal 2 (HBase): Execute **start-hbase.cmd* to initialize the NoSQL layer.
 
-Terminal 3 (Thrift): Execute hbase thrift start -p 9090 (Crucial for Python-to-HBase connectivity).
+Terminal 3 (Thrift): Execute **hbase thrift start -p 9090* (Crucial for Python-to-HBase connectivity).
 
 * **Step 2: Execute the Pipeline**
 Master Command: Run the entire end-to-end system with a single command from the project root:
@@ -121,6 +145,14 @@ python main.py
 Once you hit step 5 in main.py, it will hang until you exit (Ctrl+C). An error "Pipeline failed" may appear after; ignore it, it's a bug that I couldn't fix.
 
 ---
+
+## Known Issues
+Python 3.14 Bytecode: Due to bytecode changes in Python 3.14, the Spark Driver and Workers must run the same version to avoid serialization mismatches.
+
+Stream Shutdown: Upon exiting the Speed Layer (Ctrl+C), a Pipeline failed message may appear in the console. This is a known cleanup sequence limitation in the Spark-HBase connector and does not affect data integrity or previous stages.
+
+---
+
 
 ## Querying the Results
 * **1. Lookup a Threat (Serving Layer)**
@@ -140,6 +172,7 @@ PowerShell
 python -m src.utils.view_alerts
 
 ---
+
 
 ## Technical Optimization Notes
 * **Feature Selection: Pruned network telemetry from 80+ features to the core 5-tuple, reducing memory overhead by 80%.**
