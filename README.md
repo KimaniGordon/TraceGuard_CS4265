@@ -117,6 +117,9 @@ Master Command: Run the entire end-to-end system with a single command from the 
 PowerShell
 python main.py
 
+
+Once you hit step 5 in main.py, it will hang until you exit (Ctrl+C). An error "Pipeline failed" may appear after; ignore it, it's a bug that I couldn't fix.
+
 ---
 
 ## Querying the Results
