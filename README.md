@@ -149,3 +149,43 @@ python -m src.utils.view_alerts
 * **Memory Management: Capped Spark driver and executor memory at 1g to ensure stability alongside host system processes.**
 
 * **JVM Compatibility: Specifically tuned for Java 17 via dynamic --add-opens reflection flags in the SparkSession builder to prevent IllegalAccess errors.**
+
+---
+
+## Pipeline Documentation
+The TraceGuard pipeline is an automated 4-stage Lambda Architecture:
+
+* **Stage 1: Ingestion**
+
+Task: Fetches live threat feeds via AlienVault OTX API and network subsets from AWS S3.
+
+Config: src/config.py (API keys and URL endpoints).
+
+* **Stage 2: Cluster Landing**
+
+Task: Transports raw binaries (1.47 GB) into the Hadoop HDFS environment.
+
+Command: python -m src.ingestion.load_data.
+
+* **Stage 3: Batch Normalization**
+
+Task: Spark Engine parses unstructured HDFS logs into Snappy-compressed Parquet.
+
+Transformation: Regex-based schema-on-read for log normalization.
+
+* **Stage 4: Serving Layer Load**
+
+Task: Deduplicates data and populates the HBase NoSQL store.
+
+Result: 10,630 enriched indicators ready for sub-second lookup.
+
+---
+
+## Schema Documentation & Rationale
+Architecture: NoSQL (Wide-Column Store)
+Technology: Apache HBase
+Rationale: * RowKey Selection:  Used the Indicator (IP/Hash) as the RowKey. This allows for O(1) lookup time, which is mandatory for real-time security correlation.
+
+Column Families: utilize a single column family cf to minimize disk seek time and simplify the storage of heterogeneous threat data (IPs and Hashes in the same table).
+
+Storage Format: Parquet was chosen for HDFS because its Columnar Storage allows Spark to skip irrelevant columns during queries, reducing I/O by up to 80% compared to raw CSV.
