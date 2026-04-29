@@ -95,6 +95,11 @@ TraceGuard has been validated on a **2026 production-ready stack** to ensure com
 
 ---
 
+### 🛠️ Standardized Installation (Recommended)
+To ensure full compatibility with the Big Data stack, it is recommended to use Python 3.12.10:
+1. `& "path\to\python312.exe" -m venv .venv`
+2. `.\.venv\Scripts\activate`
+
 # ⚙️ Setup & Prerequisites
 
 ## 1. Dependency Installation
