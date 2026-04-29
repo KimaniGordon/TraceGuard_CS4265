@@ -105,7 +105,7 @@ Install the pinned dependencies required for orchestration and processing:
 pip install -r requirements.txt
 ```
 
-* **3. Configuration**
+## 2. Configuration
 API Key: Obtain a free API key from [AlienVault OTX](https://otx.alienvault.com/).
 Note on Threat Intelligence (OTX):
 To populate the Serving Layer, your OTX account must be subscribed to active pulses. For the best results during the demo, I recommend subscribing to the following public pulses on the [OTX Portal](https://otx.alienvault.com/) (You must create a free account):
