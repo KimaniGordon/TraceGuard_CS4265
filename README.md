@@ -139,7 +139,7 @@ Open three separate terminals:
 ### HDFS Cluster
 
 ```powershell
-start-all.cmd
+start-dfs.cmd
 ```
 ### NoSQL Layer
 ```powershell
