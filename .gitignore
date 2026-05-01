@@ -209,6 +209,10 @@ __marimo__/
 # Ignore Raw Data (Fetched by script)
 data/raw/threat_intel_raw.csv
 data/raw/network_traffic/aws_subset.csv
+data/raw/threat_sample.csv
+data/processed/threat_indicators.parquet
+
+
 
 # TraceGuard Project Data
 

@@ -1,33 +1,49 @@
 import happybase
-#Database browsing utility for HBase. This is a simple script that connects to the HBase Thrift server, retrieves a sample of rows from the 'threat_intel' table, and prints them in a structured format. This can be used for quick diagnostics to verify that data is being stored correctly in HBase. 
-def run_browse(limit=20):
-    """
-    Connects to HBase via Thrift and prints a structured sample of the threat intelligence.
-    """
+import pandas as pd
+import sys
+
+def scan_serving_layer(limit=100):
     try:
+        # 1. Connect to Thrift
         connection = happybase.Connection('localhost', port=9090)
         table = connection.table('threat_intel')
 
-        print("\n" + "="*60)
-        print("   TRACEGUARD DIAGNOSTIC: HBASE SERVING LAYER CONTENT")
-        print("="*60)
-        print(f"{'ROW KEY (IP)':<20} | {'TYPE':<10} | {'DESCRIPTION'}")
-        print("-" * 75)
+        print(f"\n--- [TRACEGUARD: SCANNING {limit} ROWS FROM SERVING LAYER] ---")
+        
+        data = []
+        # 2. Scan with a high limit
+        for key, cells in table.scan(limit=limit):
+            data.append({
+                "Indicator": key.decode('utf-8'),
+                "Type": cells[b'cf:type'].decode('utf-8'),
+                "Description": cells[b'cf:description'].decode('utf-8')
+            })
 
-        for key, data in table.scan(limit=limit):
-            ip = key.decode()
-            # Handle potential missing fields gracefully
-            t_type = data.get(b'cf:type', b'unknown').decode()
-            desc = data.get(b'cf:description', b'no description provided').decode()
-            
-            print(f"{ip:<20} | {t_type:<10} | {desc[:40]}...")
+        if not data:
+            print("[!] No data found in HBase table 'threat_intel'.")
+            return
 
-        print("="*60)
-        connection.close()
+        # 3. Create DataFrame
+        df = pd.DataFrame(data)
+
+        # --- THE CLEANING LOGIC (Prevents 'Wonky' Output) ---
+        # Shorten the Hashes and Descriptions so they fit on one terminal line
+        df['Indicator'] = df['Indicator'].apply(lambda x: (x[:20] + '..') if len(x) > 20 else x)
+        df['Description'] = df['Description'].apply(lambda x: x.replace('\n', ' ').strip()[:60] + "...")
+
+        # Force Pandas to show everything in a grid
+        pd.set_option('display.max_rows', None)      # Show all rows in the batch
+        pd.set_option('display.max_columns', None)   # Show all columns
+        pd.set_option('display.width', 1000)         # Prevent wrapping
+        pd.set_option('display.colheader_justify', 'left')
+
+        # 4. Print the clean table
+        print(df.to_string(index=False))
+        print(f"\n[SUMMARY] Displayed {len(df)} records.")
 
     except Exception as e:
-        print(f"[ERROR] Could not browse HBase: {e}")
+        print(f"[ERROR] Could not connect to HBase. Is Thrift running?\n{e}")
 
 if __name__ == "__main__":
-    
-    run_browse()
+    # You can change the number here to 500 or 1000 if you want to see more!
+    scan_serving_layer(limit=200)

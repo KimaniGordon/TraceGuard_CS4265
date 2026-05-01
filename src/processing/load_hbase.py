@@ -16,7 +16,7 @@ def load_to_hbase():
         connection = happybase.Connection(
             host=thrift_host, 
             port=9090, 
-            timeout=30000,
+            timeout=120000,
             protocol='binary',
             transport='buffered',
             autoconnect=False

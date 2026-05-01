@@ -1,7 +1,7 @@
 import os
 import sys
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import broadcast, lit
+from pyspark.sql import functions as F
 # Pulling everything from config.py to ensure I have all the paths and HDFS connection details
 from src.config import ( 
     HDFS_HOST,
@@ -42,39 +42,51 @@ def start_streaming():
     threat_intel = spark.read.parquet(INTEL_PARQUET_DIR)
 
     # 4. AUTO-SCHEMA: Learn the column names (Dst Port, Protocol, etc.)
-    temp_df = spark.read.option("header", "true").option("inferSchema", "true").csv(SAMPLE_FILE)
+    temp_df = spark.read \
+    .option("header", "true") \
+    .option("inferSchema", "true") \
+    .option("ignoreLeadingWhiteSpace", "true") \
+    .option("ignoreTrailingWhiteSpace", "true") \
+    .csv(SAMPLE_FILE)
     traffic_schema = temp_df.schema
 
     # 5. Start the Stream
     raw_stream = spark.readStream \
         .option("header", "true") \
+        .option("ignoreLeadingWhiteSpace", "true") \
+        .option("ignoreTrailingWhiteSpace", "true") \
         .schema(traffic_schema) \
         .csv(HDFS_TRAFFIC_PATH)
 
     # Select only the high-value columns to save your RAM/Disk
     network_stream = raw_stream.select(
-        "Dst Port", "Protocol", "Timestamp", "Flow Duration", 
-        "TotLen Fwd Pkts", "Label"
+        F.col("src_ip"), 
+        F.col("file_hash"), 
+        F.col("Dst Port").alias("dst_port"),
+        F.col("Protocol"),
+        F.col("Timestamp"),
+        F.col("Label")
     )
-
     # 6. POC WORKAROUND: Mocking the 'Src IP' 
     # Using '111.11.1.1' to test the join against OTX data
-    stream_with_ip = network_stream.withColumn("Src IP", lit("111.11.1.1")) 
+    #stream_with_ip = network_stream.withColumn("Src IP", lit("111.11.1.1")) 
 
     # 7. Perform the Broadcast Join
-    correlated_alerts = stream_with_ip.join(
-        broadcast(threat_intel), 
-        stream_with_ip["Src IP"] == threat_intel.indicator, 
+    # UPDATED: Added F. prefix to broadcast and fixed the column reference
+    correlated_alerts = network_stream.join(
+        F.broadcast(threat_intel), 
+        (F.col("src_ip") == F.col("indicator")) | 
+        (F.col("file_hash") == F.col("indicator")), 
         "inner"
     )
 
     # 8. Output the Alerts to the local file system
     query = correlated_alerts.writeStream \
         .outputMode("append") \
-        .format("parquet") \
+        .format("console") \
         .option("path", ALERTS_OUTPUT_DIR) \
         .option("checkpointLocation", CHECKPOINT_DIR) \
-        .trigger(processingTime='10 seconds') \
+        .trigger(processingTime='30 seconds') \
         .start()
 
     print(f" Simulation Active: Watching HDFS at {HDFS_HOST}")
