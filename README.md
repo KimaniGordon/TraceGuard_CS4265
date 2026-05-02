@@ -19,31 +19,38 @@ The pipeline is orchestrated by a central master script and divided into five di
 TraceGuard/
 ├── data/
 │   ├── raw/
-│   │   ├── HDFS_large.log             # The 66MB sample for Batch Layer
-│   │   ├── network_traffic/           # Empty (Populated by Stage 1)
-│   │   └── threat_intel_raw.csv       # Ignored (Populated by Stage 1)
+│   │   ├── HDFS_large.log              #  System Telemetry (Batch Layer)
+│   │   ├── network_traffic/            # Empty (Populated by Stage 1)
+│   │   └── threat_intel_raw.csv        # 71,837 raw OTX records
 │   └── processed/
-│       └── alerts/                    # Target for Speed Layer JSONs
+│       ├── hdfs_logs_v1/               # Processed Parquet logs (Batch Layer)
+│       └── threat_indicators.parquet   # Deduplicated Intelligence (14,151 rows)
+├── docs/
+│   ├── validation.md                   # Data quality metrics & forensic receipts
+│   └── data_dictionary.md              # Schema definitions for all layers
 ├── src/
-│   ├── config.py                      # Centralized Localhost/Path settings
+│   ├── config.py                       # Centralized Localhost/Path settings
 │   ├── ingestion/
-│   │   ├── fetch_otx.py               # API: Pulls latest threat intel
-│   │   ├── fetch_aws.py               # API: Pulls 350MB traffic log
-│   │   └── load_data.py               # HDFS: Moves files to cluster
+│   │   ├── fetch_otx.py                # API: Pulls 71k+ threat indicators
+│   │   ├── fetch_aws.py                # API: Pulls 350MB traffic log
+│   │   └── load_data.py                # HDFS: Moves files to cluster
 │   ├── processing/
-│   │   ├── data_cleanse.py            # Spark: Pre-processing & Deduplication
-│   │   ├── spark_engine.py            # Spark: Normalization Engine
-│   │   ├── process_hdfs.py            # Spark: Log Parsing
-│   │   ├── load_hbase.py              # HBase: Serving Layer Ingestion
-│   │   └── stream_correlation.py      # Streaming: Real-time Speed Layer
+│   │   ├── data_cleanse.py             # Spark: Pre-processing & Deduplication
+│   │   ├── spark_engine.py             # Spark: Normalization Engine
+│   │   ├── process_hdfs.py             # Spark: Log Parsing
+│   │   ├── load_hbase.py               # HBase: Serving Layer Ingestion
+│   │   └── stream_correlation.py       # Streaming: Real-time Speed Layer
 │   └── utils/
-│       ├── browse_hbase.py            # Diagnostic: View Serving Layer
-│       ├── search_threat.py           # Forensic: Keyword search
-│       ├── reset_hbase.py             # Maintenance: Clear/Recreate Table
-│       └── query_intel.py             # Forensic: Single IP lookup
-├── main.py                            # THE MASTER ORCHESTRATOR
-├── .gitignore                         # Prevents 350MB+ bloat
-└── README.md                          # Architecture & Run Instructions
+│       ├── browse_hbase.py             # Diagnostic: View Serving Layer
+│       ├── search_threat.py            # Forensic: Keyword search
+│       ├── reset_hbase.py              # Maintenance: Clear/Recreate Table
+│       ├── query_intel.py              # Forensic: Single IP lookup
+│       ├── cross_layer_search.py       # Forensic: 1.5GB HDFS "Needle-in-Haystack"
+│       └── inject_threat.py            # Simulation: Mock malicious traffic injector
+├── main.py                             # THE MASTER ORCHESTRATOR
+├── LICENSE                             # MIT License
+├── .gitignore                          # Prevents bloat
+└── README.md                           # Architecture & Run Instructions
 ```
 ---
 # 📥 Data Acquisition & Scalability
