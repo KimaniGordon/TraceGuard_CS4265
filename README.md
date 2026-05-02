@@ -127,11 +127,12 @@ Ones that include Brute Force/Scanner IPs or Known Malicious Botnets.
 Note:you only have to subscribe to 2 or so.
 To find the pulses and subscribe, click on "Browse" in the top dashboard after creating your account. Then you should be able to subscribe to 2 or so pulses.
 
-Environment Variables: Copy .env.example to a new file named .env and add: OTX_API_KEY=your_actual_key_here.
-Additionally, open the .env file and update the following value: HDFS_HOST = localhost:9000 (Example value). This must match your Hadoop config.
-How to Verify your HDFS_HOST? If you are unsure of your Hadoop address or port, you can verify them in your local Hadoop installation files. To do that, navigate to your Hadoop configuration directory (e.g., C:\hadoop\etc\hadoop\). Open the core-site.xml file. Look for the <name>fs.defaultFS</name> property.The value (e.g., hdfs://localhost:9000) contains the exact host and port you should use in your .env file.
+Environment Variables: 
+* Copy .env.example to a new file named .env and add: OTX_API_KEY=your_actual_key_here.
+* Additionally, open the .env file and update the following value: HDFS_HOST = localhost:9000 (Example value). This must match your Hadoop config.
+* How to Verify your HDFS_HOST? If you are unsure of your Hadoop address or port, you can verify them in the configuration files of your local Hadoop installation. To do that, navigate to your Hadoop configuration directory (e.g., C:\hadoop\etc\hadoop\). Open the core-site.xml file. Look for the <name>fs.defaultFS</name> property.The value (e.g., hdfs://localhost:9000) contains the exact host and port you should use in your .env file.
 
-Local Data: Ensure the data/raw/HDFS_large.log file is present in the directory before execution.
+* Local Data: Ensure the data/raw/HDFS_large.log file is present in the directory before execution.
 
 ---
 
