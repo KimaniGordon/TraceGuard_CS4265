@@ -44,7 +44,7 @@ def run_transformations(input_path=RAW_INTEL_PATH):
         print(f"[INFO] Writing to {INTEL_PARQUET_DIR}...")
         processed_df.write.mode("overwrite").parquet(INTEL_PARQUET_DIR)
             
-        print(f"[SUCCESS] 100k indicators processed. No hang detected!")
+        print(f"[SUCCESS] indicators processed. No hang detected!")
         processed_df.show(5, truncate=False)
         
     except Exception as e:

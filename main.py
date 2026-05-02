@@ -43,13 +43,13 @@ def run_traceguard_pipeline():
 
     # STAGE 0: CLEANUP
     # Reset the environment to ensure a fresh, successful run
-    #deep_clean()
+    deep_clean()
 
     # STAGE 1: INGESTION
     # Fetching raw data from APIs and AWS Registry
     print("\n--- [STAGE 1: DATA INGESTION] ---")
-    #fetch_otx()
-    #fetch_aws()
+    fetch_otx()
+    fetch_aws()
 
     # STAGE 1.5: CANARY THREAT INJECTION
     # This is a critical step to validate the entire pipeline's ability to detect and process threats
