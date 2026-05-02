@@ -231,7 +231,7 @@ Transformation: Regex-based schema-on-read for log normalization.
 
 Task: Deduplicates data and populates the HBase NoSQL store.
 
-Result: 10,630 enriched indicators ready for sub-second lookup.
+Result: Enriched indicators ready for sub-second lookup.
 
 ---
 
