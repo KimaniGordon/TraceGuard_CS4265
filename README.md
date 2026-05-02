@@ -228,6 +228,7 @@ Result: 10,630 enriched indicators ready for sub-second lookup.
 
 ---
 
+
 ## Schema Documentation & Rationale
 Architecture: NoSQL (Wide-Column Store)
 Technology: Apache HBase
@@ -236,3 +237,62 @@ Rationale: * RowKey Selection:  Used the Indicator (IP/Hash) as the RowKey. This
 Column Families: utilize a single column family cf to minimize disk seek time and simplify the storage of heterogeneous threat data (IPs and Hashes in the same table).
 
 Storage Format: Parquet was chosen for HDFS because its Columnar Storage allows Spark to skip irrelevant columns during queries, reducing I/O by up to 80% compared to raw CSV.
+
+
+---
+
+# 📖 TraceGuard Data Dictionary
+
+This data dictionary defines the schema for the three primary architectural layers of the TraceGuard pipeline: **Threat Intelligence (Serving Layer)**, **System Telemetry (Batch Layer)**, and **Enriched Alerts (Speed Layer)**.
+
+---
+
+## 1. Threat Intelligence Layer (HBase)
+**Table Name:** `threat_intel`  
+**Purpose:** Provides a high-speed lookup "Serving Layer" for the Speed Layer to identify malicious actors.
+
+| Column | Data Type | Description | Example |
+| :--- | :--- | :--- | :--- |
+| **RowKey (indicator)** | `String` | The unique threat identifier (IP or File Hash). | `85.11.161.198` |
+| **cf:type** | `String` | The category of the indicator. | `ipv4`, `filehash-sha256` |
+| **cf:description** | `String` | Contextual metadata provided by OTX pulses. | `ClickFix Phishing Site` |
+| **cf:processed_at** | `Timestamp` | Metadata recording when the record was ingested. | `2026-04-29 22:41:04` |
+
+---
+
+## 2. HDFS System Logs (Batch Layer)
+**Storage Format:** `Parquet`  
+**Purpose:** Stores historical system telemetry for deep forensic analysis and "Cross-Layer" correlation.
+
+| Column | Data Type | Description | Example |
+| :--- | :--- | :--- | :--- |
+| **date** | `Integer` | The system date of the log entry (YYMMDD). | `081109` |
+| **time** | `Integer` | The system time of the log entry (HHMMSS). | `203518` |
+| **component** | `String` | The HDFS service component generating the log. | `dfs.DataNode$DataXceiver` |
+| **block_id** | `String` | The unique ID of the HDFS data block being accessed. | `blk_-160899968...` |
+| **message** | `String` | The raw log message containing source and destination info. | `Receiving block...` |
+
+---
+
+## 3. Enriched Alerts (Speed Layer)
+**Output Format:** `JSON / Parquet`  
+**Purpose:** The final output of the Real-Time engine, joining live traffic with intelligence context.
+
+| Column | Data Type | Description | Example |
+| :--- | :--- | :--- | :--- |
+| **src_ip** | `String` | The source IP address from the live network flow. | `192.168.1.100` |
+| **file_hash** | `String` | The hash of any file detected in the network stream. | `7321caa3...` |
+| **dst_port** | `Integer` | The destination network port. | `443` |
+| **Protocol** | `Integer` | The protocol ID (e.g., 6 for TCP, 17 for UDP). | `6` |
+| **Timestamp** | `Timestamp` | The original event time from the network log. | `02/03/2018 08:47:38` |
+| **Label** | `String` | The security classification from the ingestion layer. | `Malicious_Network` |
+| **indicator** | `String` | The matching key from the Threat Intelligence layer. | `85.11.161.198` |
+| **type** | `String` | The intelligence type (Joined from HBase). | `ipv4` |
+| **description** | `String` | The full threat context (Joined from HBase). | `SSH Brute-Force Honeypot` |
+
+---
+
+## Data Transformation Summary
+* **De-normalization:** The Speed Layer performs a **Stream-Static Join**, de-normalizing raw telemetry with intelligence context to provide human-readable alerts.
+* **Compression:** HDFS Batch logs are stored in **Columnar Parquet** format, reducing storage footprint by ~70% compared to raw text.
+* **Indexing:** HBase utilizes a **RowKey-based index** on the `indicator` field to ensure sub-millisecond lookup latency during peak traffic.
