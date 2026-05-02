@@ -5,7 +5,7 @@ boto3==1.34.0
 
 # --- Big Data Engine ---
 pyspark==4.1.1
-findspark==2.0.1        # CRITICAL: Fixes the 'NoneType' origin error we saw earlier
+findspark==2.0.1        # CRITICAL
 pyarrow==18.0.0      # REQUIRED: For Snappy-compressed Parquet support
 
 # --- NoSQL Serving Layer ---
