@@ -271,9 +271,21 @@ This data dictionary defines the schema for the three primary architectural laye
 | **cf:description** | `String` | Contextual metadata provided by OTX pulses. | `ClickFix Phishing Site` |
 | **cf:processed_at** | `Timestamp` | Metadata recording when the record was ingested. | `2026-04-29 22:41:04` |
 
+
+## 2. Real-Time Alert Layer (HBase)
+**Table Name:** `alerts`  
+**Purpose:** Acts as the persistent "Speed Layer" storage within the Technology Stack [cite: 5-13], saving real-time detection matches for historical auditing and forensic recall.
+
+| Column | Data Type | Description | Example |
+| :--- | :--- | :--- | :--- |
+| **RowKey (composite)** | `String` | [cite_start]A unique identifier combining `Timestamp_SrcIP` to ensure indexing efficiency. | `02/03/2018 08:47:38_222.73.56.10` |
+| **cf:src_ip** | `String` | The malicious source IP identified in the network stream. | `222.73.56.10` |
+| **cf:description** | `String` | [cite_start]The specific threat metadata matched from the Serving Layer[cite: 13]. | `SSH Brute-Force Honeypot Live` |
+| **cf:timestamp** | `String` | The original event timestamp from the HDFS telemetry logs. | `02/03/2018 08:47:38` |
+| **cf:label** | `String` | The original classification label from the raw dataset. | `Malicious_Network_Activity` |
 ---
 
-## 2. HDFS System Logs (Batch Layer)
+## 3. HDFS System Logs (Batch Layer)
 **Storage Format:** `Parquet`  
 **Purpose:** Stores historical system telemetry for deep forensic analysis and "Cross-Layer" correlation.
 
@@ -287,7 +299,7 @@ This data dictionary defines the schema for the three primary architectural laye
 
 ---
 
-## 3. Enriched Alerts (Speed Layer)
+## 4. Enriched Alerts (Speed Layer)
 **Output Format:** `JSON / Parquet`  
 **Purpose:** The final output of the Real-Time engine, joining live traffic with intelligence context.
 
