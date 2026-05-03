@@ -1,10 +1,10 @@
-#  TraceGuard: Unified Big Data IDS Pipeline
+# 🛡️ TraceGuard: Unified Big Data IDS Pipeline
 
 **TraceGuard** is a high-performance Intrusion Detection System (IDS) prototype built on a **Lambda Architecture**. It demonstrates the ability to process massive historical log datasets (**Batch Layer**) while simultaneously correlating high-velocity network traffic against real-time threat intelligence (**Speed Layer**).
 
 ---
 
-##  Architecture Overview
+## 🏛️ Architecture Overview
 The pipeline is orchestrated by a central master script and divided into five distinct stages:
 * **Environment Cleanup:** Automated purging of legacy test data and checkpoints to prevent disk overflow.
 * **Multimodal Ingestion:** Retrieval of 100k+ atomic threat indicators via AlienVault OTX and network traffic subsets from the AWS Public Registry.
@@ -14,7 +14,7 @@ The pipeline is orchestrated by a central master script and divided into five di
 
 ---
 
-##  Project Directory Structure
+## 🗺️ Project Directory Structure
 ```text
 TraceGuard/
 ├── data/
@@ -176,7 +176,7 @@ Stream Shutdown: Upon exiting the Speed Layer (Ctrl+C), a Pipeline failed messag
 ---
 
 
-## Querying the Results
+## 🔎 Querying the Results
 * **1. Lookup a Threat (Serving Layer)**
 HBase Query: 
 PowerShell
@@ -196,7 +196,7 @@ python -m src.utils.view_alerts
 ---
 
 
-## Technical Optimization Notes
+## 📝 Technical Optimization Notes
 * **Feature Selection: Pruned network telemetry from 80+ features to the core 5-tuple, reducing memory overhead by 80%.**
 
 * **Partition Tuning: Restricted Spark shuffle partitions to 1 or 2 to prevent excessive disk "spilling" on consumer hardware.**
@@ -207,7 +207,7 @@ python -m src.utils.view_alerts
 
 ---
 
-## Pipeline Documentation
+## 📄 Pipeline Documentation
 The TraceGuard pipeline is an automated 4-stage Lambda Architecture:
 
 * **Stage 1: Ingestion**
@@ -300,7 +300,7 @@ This data dictionary defines the schema for the three primary architectural laye
 
 ---
 
-## Data Transformation Summary
+## ➡️ Data Transformation Summary
 * **De-normalization:** The Speed Layer performs a **Stream-Static Join**, de-normalizing raw telemetry with intelligence context to provide human-readable alerts.
 * **Compression:** HDFS Batch logs are stored in **Columnar Parquet** format, reducing storage footprint by ~70% compared to raw text.
 * **Indexing:** HBase utilizes a **RowKey-based index** on the `indicator` field to ensure sub-millisecond lookup latency during peak traffic.
