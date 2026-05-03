@@ -2,21 +2,26 @@ import happybase
 import pandas as pd
 import sys
 
-def scan_serving_layer(limit=100):
+def run_browse(limit=100):
+    """
+    Renamed to run_browse to match main.py expectations.
+    Displays a clean, grid-view of the HBase Serving Layer.
+    """
     try:
-        # 1. Connect to Thrift
+        # 1. Connect to Thrift (Ensure 'hbase thrift start -p 9090' is running!)
         connection = happybase.Connection('localhost', port=9090)
         table = connection.table('threat_intel')
 
         print(f"\n--- [TRACEGUARD: SCANNING {limit} ROWS FROM SERVING LAYER] ---")
         
         data = []
-        # 2. Scan with a high limit
+        # 2. Scan with the provided limit
         for key, cells in table.scan(limit=limit):
+            #  use .get() to prevent KeyErrors if a record is partially missing data
             data.append({
                 "Indicator": key.decode('utf-8'),
-                "Type": cells[b'cf:type'].decode('utf-8'),
-                "Description": cells[b'cf:description'].decode('utf-8')
+                "Type": cells.get(b'cf:type', b'N/A').decode('utf-8'),
+                "Description": cells.get(b'cf:description', b'N/A').decode('utf-8')
             })
 
         if not data:
@@ -32,18 +37,20 @@ def scan_serving_layer(limit=100):
         df['Description'] = df['Description'].apply(lambda x: x.replace('\n', ' ').strip()[:60] + "...")
 
         # Force Pandas to show everything in a grid
-        pd.set_option('display.max_rows', None)      # Show all rows in the batch
-        pd.set_option('display.max_columns', None)   # Show all columns
-        pd.set_option('display.width', 1000)         # Prevent wrapping
+        pd.set_option('display.max_rows', None)      
+        pd.set_option('display.max_columns', None)   
+        pd.set_option('display.width', 1000)         
         pd.set_option('display.colheader_justify', 'left')
 
         # 4. Print the clean table
         print(df.to_string(index=False))
         print(f"\n[SUMMARY] Displayed {len(df)} records.")
 
+        connection.close()
+
     except Exception as e:
-        print(f"[ERROR] Could not connect to HBase. Is Thrift running?\n{e}")
+        print(f"[ERROR] HBase Browse Failed. Is Thrift running on 9090?\nDetail: {e}")
 
 if __name__ == "__main__":
-    # You can change the number here to 500 or 1000 if you want to see more!
-    scan_serving_layer(limit=200)
+    # If run manually, it defaults to 200 rows
+    run_browse(limit=200)

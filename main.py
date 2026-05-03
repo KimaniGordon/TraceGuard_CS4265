@@ -4,7 +4,6 @@ import subprocess
 
 # --- 1. IMPORT ALL WRAPPERS FROM THE SCRIPTS ---
 # Ingestion Layer
-from src.processing import inject_threat
 from src.utils.data_fetcher import fetch_sample_data
 from src.ingestion.fetch_otx import run_ingestion as fetch_otx
 from src.ingestion.fetch_aws import download_aws_subset as fetch_aws

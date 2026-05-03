@@ -1,22 +1,45 @@
 import os
 import sys
+import happybase  
 from pyspark.sql import SparkSession
 from pyspark.sql import functions as F
-# Pulling everything from config.py to ensure I have all the paths and HDFS connection details
 from src.config import ( 
     HDFS_HOST,
     HDFS_TRAFFIC_PATH, 
     INTEL_PARQUET_DIR, 
     TRAFFIC_INPUT_DIR,
-    ALERTS_OUTPUT_DIR,
     CHECKPOINT_DIR
 )
 
+def write_to_hbase(batch_df, batch_id):
+    if batch_df.count() == 0:
+        return
+
+    print(f"--- [BATCH {batch_id}]: Writing {batch_df.count()} hits to HBase ---")
+    
+    # POC-friendly conversion to Pandas
+    records = batch_df.toPandas()
+    
+    try:
+        connection = happybase.Connection('localhost', port=9090)
+        if b'alerts' not in connection.tables():
+            connection.create_table('alerts', {'cf': dict()})
+        
+        table = connection.table('alerts')
+        
+        for _, row in records.iterrows():
+            row_key = f"{row['Timestamp']}_{row['src_ip']}"
+            table.put(row_key.encode(), {
+                b'cf:src_ip': str(row['src_ip']).encode(),
+                b'cf:description': str(row['description']).encode(),
+                b'cf:timestamp': str(row['Timestamp']).encode(),
+                b'cf:label': str(row['Label']).encode()
+            })
+        connection.close()
+    except Exception as e:
+        print(f"[ERROR] HBase Write Failed: {e}")
+
 def start_streaming():
-    # 1. Initialize the Engine
-    # --- MODERN JVM CONFIGURATION ---
-    # Essential for Spark Structured Streaming on Java 17+.
-    # This ensures the 'Checkpointing' and 'State Management' work without JVM crashes.
     spark = SparkSession.builder \
         .appName("TraceGuard_Speed_Layer") \
         .config("spark.sql.shuffle.partitions", "2") \
@@ -28,37 +51,25 @@ def start_streaming():
                 "--add-opens=java.base/sun.nio.ch=ALL-UNNAMED") \
         .getOrCreate()
     
-    # 2. Path Verification for Schema Inference
-    # use the local sample to 'teach' Spark the column names
     SAMPLE_FILE = os.path.join(TRAFFIC_INPUT_DIR, "aws_subset.csv")
-
     if not os.path.exists(SAMPLE_FILE):
-        print(f"[ERROR] Could not find sample file for schema inference: {SAMPLE_FILE}")
+        print(f"[ERROR] Could not find sample: {SAMPLE_FILE}")
         spark.stop()
         sys.exit(1)
 
-    # 3. Load the bad guys (Dimension Table)
-    # This is the data that will be broadcasted to the stream
     threat_intel = spark.read.parquet(INTEL_PARQUET_DIR)
 
-    # 4. AUTO-SCHEMA: Learn the column names (Dst Port, Protocol, etc.)
     temp_df = spark.read \
-    .option("header", "true") \
-    .option("inferSchema", "true") \
-    .option("ignoreLeadingWhiteSpace", "true") \
-    .option("ignoreTrailingWhiteSpace", "true") \
-    .csv(SAMPLE_FILE)
+        .option("header", "true") \
+        .option("inferSchema", "true") \
+        .csv(SAMPLE_FILE)
     traffic_schema = temp_df.schema
 
-    # 5. Start the Stream
     raw_stream = spark.readStream \
         .option("header", "true") \
-        .option("ignoreLeadingWhiteSpace", "true") \
-        .option("ignoreTrailingWhiteSpace", "true") \
         .schema(traffic_schema) \
         .csv(HDFS_TRAFFIC_PATH)
 
-    # Select only the high-value columns to save your RAM/Disk
     network_stream = raw_stream.select(
         F.col("src_ip"), 
         F.col("file_hash"), 
@@ -67,12 +78,7 @@ def start_streaming():
         F.col("Timestamp"),
         F.col("Label")
     )
-    # 6. POC WORKAROUND: Mocking the 'Src IP' 
-    # Using '111.11.1.1' to test the join against OTX data
-    #stream_with_ip = network_stream.withColumn("Src IP", lit("111.11.1.1")) 
 
-    # 7. Perform the Broadcast Join
-    # UPDATED: Added F. prefix to broadcast and fixed the column reference
     correlated_alerts = network_stream.join(
         F.broadcast(threat_intel), 
         (F.col("src_ip") == F.col("indicator")) | 
@@ -80,20 +86,22 @@ def start_streaming():
         "inner"
     )
 
-    # 8. Output the Alerts to the local file system
+    # Sink 1: HBase
     query = correlated_alerts.writeStream \
-        .outputMode("append") \
-        .format("console") \
-        .option("path", ALERTS_OUTPUT_DIR) \
+        .foreachBatch(write_to_hbase) \
         .option("checkpointLocation", CHECKPOINT_DIR) \
         .trigger(processingTime='30 seconds') \
         .start()
+    
+    # Sink 2: Console (For Screenshots)
+    console_query = correlated_alerts.writeStream \
+        .outputMode("append") \
+        .format("console") \
+        .trigger(processingTime='30 seconds') \
+        .start()
 
-    print(f" Simulation Active: Watching HDFS at {HDFS_HOST}")
-    print(f" Writing hits to: {ALERTS_OUTPUT_DIR}")
+    #  Wait for any of the active streams to finish
+    spark.streams.awaitAnyTermination()
 
-    query.awaitTermination()
-
-# Execute streaming if script is run directly
 if __name__ == "__main__":
     start_streaming()
