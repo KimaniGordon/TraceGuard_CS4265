@@ -1,6 +1,6 @@
 # TraceGuard: Data Validation Report
 
-This report provides quantitative evidence that the **TraceGuard** pipeline produces correct, meaningful, and consistent output[cite: 25]. It validates the distributed join operations and the system's real-time detection capabilities.
+This report provides quantitative evidence that the **TraceGuard** pipeline produces correct, meaningful, and consistent output. It validates the distributed join operations and the system's real-time detection capabilities.
 
 ---
 
