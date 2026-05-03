@@ -5,13 +5,20 @@
 ---
 
 ## 🏛️ Architecture Overview
-The pipeline is orchestrated by a central master script and divided into five distinct stages:
-* **Environment Cleanup:** Automated purging of legacy test data and checkpoints to prevent disk overflow.
-* **Multimodal Ingestion:** Retrieval of 100k+ atomic threat indicators via AlienVault OTX and network traffic subsets from the AWS Public Registry.
-* **Distributed Storage:** Migration of raw telemetry (1.47GB logs) into the HDFS cluster.
-* **Spark Processing:** Large-scale log parsing and indicator normalization using optimized Spark configurations.
-* **Serving & Speed Layers:** Populating HBase for low-latency lookups and launching a Spark Structured Streaming engine for real-time detection.
+TraceGuard implements a **Lambda Architecture**, ensuring data independence by separating the logical intent of security queries from the physical execution on the distributed cluster. 
 
+<img width="1425" height="446" alt="UpdatedLambdaArch drawio" src="https://github.com/user-attachments/assets/e0b3f9e7-15df-445e-a0b3-ca08fdf30670" />
+
+
+
+
+The pipeline is orchestrated by a central master script and divided into five distinct stages:
+
+* **Stage 1: Environment Cleanup:** Automated purging of legacy test data and checkpoints to prevent disk overflow and ensure an idempotent execution environment.
+* **Stage 2: Multimodal Ingestion:** Retrieval of 100k+ atomic threat indicators via AlienVault OTX (Variety) and network traffic subsets from the AWS Public Registry (Volume).
+* **Stage 3: Distributed Storage (Batch Layer):** Migration of raw telemetry (1.47GB logs) into the **HDFS cluster**, utilizing a distributed storage model to ensure data locality.
+* **Stage 4: Spark Batch Processing:** Large-scale log parsing and indicator normalization using **Tuple Stream Semantics**, where data flows through functional transformations in the Spark engine.
+* **Stage 5: Serving & Speed Layers:** Populating **HBase** for low-latency lookups (Serving Layer) and launching a **Spark Structured Streaming** engine for real-time detection (Speed Layer).
 ---
 
 ## 🗺️ Project Directory Structure
